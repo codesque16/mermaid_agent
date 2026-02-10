@@ -1,0 +1,22 @@
+- type: function
+  name: search_knowledge_base
+  description: "Search the company knowledge base for FAQs, policies, and travel information"
+  parameters:
+    query:
+      type: string
+      description: "Search query"
+    category:
+      type: string
+      enum: [baggage, visa, insurance, destinations, flights, hotels, loyalty, general]
+      description: "Optional category filter"
+    max_results:
+      type: integer
+      default: 5
+
+- type: function
+  name: get_booking_summary
+  description: "Get a brief booking summary to personalize answers"
+  parameters:
+    booking_ref:
+      type: string
+      description: "Booking reference"

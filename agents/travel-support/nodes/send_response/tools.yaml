@@ -1,0 +1,31 @@
+- type: function
+  name: send_message
+  description: "Send a message to the customer via their preferred channel"
+  parameters:
+    customer_id:
+      type: string
+      description: "Customer ID"
+    channel:
+      type: string
+      enum: [email, chat, sms]
+    message:
+      type: string
+      description: "Message content"
+    subject:
+      type: string
+      description: "Email subject line (required for email channel)"
+
+- type: function
+  name: log_interaction
+  description: "Log the support interaction for records and analytics"
+  parameters:
+    customer_id:
+      type: string
+    intent:
+      type: string
+    resolution:
+      type: string
+    escalated:
+      type: boolean
+    channel:
+      type: string

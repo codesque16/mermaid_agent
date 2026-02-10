@@ -1,0 +1,29 @@
+- type: function
+  name: apply_resolution
+  description: "Execute a complaint resolution (rebooking, credit, room change, etc.)"
+  parameters:
+    booking_ref:
+      type: string
+      description: "Booking reference"
+    resolution_type:
+      type: string
+      enum: [rebook, room_change, credit, voucher, billing_correction]
+    details:
+      type: object
+      description: "Resolution details (new booking, credit amount, etc.)"
+
+- type: function
+  name: issue_compensation
+  description: "Issue customer compensation (credits or vouchers)"
+  parameters:
+    customer_id:
+      type: string
+    amount:
+      type: number
+      description: "Amount in dollars (max $200 for auto-resolution)"
+    type:
+      type: string
+      enum: [account_credit, meal_voucher, travel_voucher]
+    reason:
+      type: string
+      description: "Reason for compensation"

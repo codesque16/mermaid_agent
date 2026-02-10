@@ -1,0 +1,21 @@
+input_guardrails:
+  - name: response_not_empty
+    check: "response_text is not null and length > 0"
+    action: fail
+
+output_guardrails:
+  - name: no_internal_data_leak
+    check: "response_text does not contain internal booking costs, margins, or agent notes"
+    action: revise
+
+  - name: no_unauthorized_promises
+    check: "response_text does not promise refunds, fee waivers, or compensation that wasn't authorized"
+    action: revise
+
+  - name: no_customer_blame
+    check: "response_text does not blame or patronize the customer"
+    action: revise
+
+  - name: language_match
+    check: "response language matches customer's language"
+    action: revise

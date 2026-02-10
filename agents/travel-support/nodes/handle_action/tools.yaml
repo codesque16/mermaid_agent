@@ -1,0 +1,26 @@
+- type: function
+  name: modify_booking
+  description: "Execute a modification on an existing booking"
+  parameters:
+    booking_ref:
+      type: string
+      description: "Booking reference"
+    change_type:
+      type: string
+      enum: [date_change, upgrade, add_service, name_correction, special_request]
+    change_details:
+      type: object
+      description: "Details of the change (varies by type)"
+    apply_fees:
+      type: boolean
+      default: true
+      description: "Whether to apply standard change fees"
+
+- type: function
+  name: get_change_fee
+  description: "Calculate the fee for a specific booking change"
+  parameters:
+    booking_ref:
+      type: string
+    change_type:
+      type: string

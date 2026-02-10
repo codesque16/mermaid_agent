@@ -1,0 +1,24 @@
+- type: function
+  name: get_booking_details
+  description: "Retrieve full booking details including flights, hotels, passengers, and costs"
+  parameters:
+    booking_ref:
+      type: string
+      description: "Booking reference number"
+    customer_id:
+      type: string
+      description: "Customer ID (fallback if no booking ref)"
+
+- type: function
+  name: check_availability
+  description: "Check availability for a potential change (new dates, upgrades, etc.)"
+  parameters:
+    booking_ref:
+      type: string
+      description: "Current booking reference"
+    change_type:
+      type: string
+      enum: [date_change, upgrade, add_service, cancel]
+    new_value:
+      type: string
+      description: "The desired new value (new date, room type, etc.)"

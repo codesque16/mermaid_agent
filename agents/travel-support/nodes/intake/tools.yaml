@@ -1,0 +1,10 @@
+- type: function
+  name: lookup_customer
+  description: "Look up a customer by ID or booking reference"
+  parameters:
+    customer_id:
+      type: string
+      description: "Customer ID"
+    booking_ref:
+      type: string
+      description: "Booking reference number"
