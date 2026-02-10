@@ -54,6 +54,11 @@ venv/
 # Thumbnails
 ._*
 
+# Agent session (copies)
+agent-session/agent/
+agent-session/CLAUDE.md
+agent-session/visualizer-mermaid-debug.txt
+
 # Cursor / local tools
 .cursor/
 .codex/

@@ -1,13 +1,11 @@
 {
-    "mcpServers": {
-      "agent-runtime-mcp": {
-        "command": "node",
-        "args": [
-          "./agent-runtime-mcp/src/index.js"
-        ],
-        "env": {
-          "AGENT_PATH": "./travel-support"
-        }
+  "mcpServers": {
+    "agent-runtime": {
+      "command": "node",
+      "args": ["/Users/shiladityabanerjee/Downloads/mermaid_agent/agent-session/agent-runtime-mcp/src/index.js"],
+      "env": {
+        "AGENT_PATH": "/Users/shiladityabanerjee/Downloads/mermaid_agent/agent-session/agent"
       }
     }
   }
+}

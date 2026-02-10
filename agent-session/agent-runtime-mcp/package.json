@@ -1,7 +1,7 @@
 {
   "name": "agent-runtime-mcp",
-  "version": "1.0.0",
-  "description": "MCP server providing execution state management for graph-based Claude agents",
+  "version": "2.0.0",
+  "description": "MCP server with per-session file persistence, live mermaid visualizer, and trace logging",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "js-yaml": "^4.1.0",
+    "open": "^10.1.0",
     "zod": "^3.23.0"
   }
 }

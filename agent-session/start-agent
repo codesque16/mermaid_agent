@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <absolute-path-to-agent-dir>"
+    echo "Example: $0 /path/to/agents/travel-support"
+    exit 1
+fi
+
+AGENT_DIR="$1"
+if [ ! -d "$AGENT_DIR" ]; then
+    echo "Error: Agent directory does not exist: $AGENT_DIR"
+    exit 1
+fi
+
+echo "Starting agent from: $AGENT_DIR"
+echo ""
+
+"$SCRIPT_DIR/setup.sh" "$AGENT_DIR"
+
+echo ""
+echo "Launching Claude..."
+exec claude --append-system-prompt-file "$SCRIPT_DIR/CLAUDE.md" "start the agent"
