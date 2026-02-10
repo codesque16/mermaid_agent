@@ -307,7 +307,7 @@ mcpServer.tool("node_enter",
     }
     return ok({ status: "entered", node_id, iteration: count + 1, max_iterations: max,
       input_data: input_data || {}, has_instructions: !!instructions,
-      instructions_preview: instructions?.substring(0, 500) || null });
+      instructions: instructions || null });
   }
 );
 
@@ -369,28 +369,28 @@ mcpServer.tool("get_shared_context", "Retrieve from shared context.",
   }
 );
 
-mcpServer.tool("request_human_input", "Pause for user input at human_input nodes.",
-  { prompt: z.string(), options: z.array(z.string()).optional() },
-  async ({ prompt, options }) => {
-    if (!state) return err("Call agent_init first.");
-    state.status = "paused";
-    state.record({ action: "human_input_requested", node: state.currentNode, prompt });
-    return ok({ status: "paused_for_human", prompt, options: options || [] });
-  }
-);
+// mcpServer.tool("request_human_input", "Pause for user input at human_input nodes.",
+//   { prompt: z.string(), options: z.array(z.string()).optional() },
+//   async ({ prompt, options }) => {
+//     if (!state) return err("Call agent_init first.");
+//     state.status = "paused";
+//     state.record({ action: "human_input_requested", node: state.currentNode, prompt });
+//     return ok({ status: "paused_for_human", prompt, options: options || [] });
+//   }
+// );
 
-mcpServer.tool("spawn_subagent", "Load sub-agent from nested agent-mermaid.md.",
-  { agent_path: z.string(), input_data: z.record(z.string(), z.any()) },
-  async ({ agent_path, input_data }) => {
-    if (!state) return err("Call agent_init first.");
-    const p = resolve(agent_path);
-    const hasSP = existsSync(join(p, "SYSTEM_PROMPT.md"));
-    const hasMermaid = existsSync(join(p, "agent-mermaid.md"));
-    state.record({ action: "subagent_spawn", node: state.currentNode, path: p });
-    return ok({ status: hasSP ? "ready" : "needs_compile", agent_path: p,
-      has_mermaid: hasMermaid, has_system_prompt: hasSP, input_data });
-  }
-);
+// mcpServer.tool("spawn_subagent", "Load sub-agent from nested agent-mermaid.md.",
+//   { agent_path: z.string(), input_data: z.record(z.string(), z.any()) },
+//   async ({ agent_path, input_data }) => {
+//     if (!state) return err("Call agent_init first.");
+//     const p = resolve(agent_path);
+//     const hasSP = existsSync(join(p, "SYSTEM_PROMPT.md"));
+//     const hasMermaid = existsSync(join(p, "agent-mermaid.md"));
+//     state.record({ action: "subagent_spawn", node: state.currentNode, path: p });
+//     return ok({ status: hasSP ? "ready" : "needs_compile", agent_path: p,
+//       has_mermaid: hasMermaid, has_system_prompt: hasSP, input_data });
+//   }
+// );
 
 mcpServer.tool("complete_execution", "Mark agent complete at terminal node.",
   { final_output: z.record(z.string(), z.any()),
