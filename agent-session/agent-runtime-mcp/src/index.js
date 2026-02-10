@@ -298,13 +298,22 @@ mcpServer.tool("node_enter",
     state.currentNode = node_id;
     state.iterationCounts[node_id] = count + 1;
     if (input_data) state.sharedContext[`${node_id}_input`] = input_data;
-    state.record({ action: "enter", node: node_id, iteration: count + 1 });
 
     let instructions = null;
     for (const n of [node_id, node_id.replace(/_/g, "-")]) {
       const ip = join(state.agentPath, "nodes", n, "index.md");
       if (existsSync(ip)) { instructions = readFileSync(ip, "utf-8"); break; }
     }
+
+    state.record({
+      action: "enter",
+      node: node_id,
+      iteration: count + 1,
+      input_data: input_data || {},
+      has_instructions: !!instructions,
+      instructions: instructions || null,
+    });
+
     return ok({ status: "entered", node_id, iteration: count + 1, max_iterations: max,
       input_data: input_data || {}, has_instructions: !!instructions,
       instructions: instructions || null });
@@ -318,7 +327,12 @@ mcpServer.tool("node_complete",
     if (!state) return err("Call agent_init first.");
     state.nodeOutputs[node_id] = output_data;
     state.sharedContext[`${node_id}_output`] = output_data;
-    state.record({ action: "complete", node: node_id, keys: Object.keys(output_data) });
+    state.record({
+      action: "complete",
+      node: node_id,
+      keys: Object.keys(output_data),
+      output_data,
+    });
     return ok({ status: "completed", node_id, output_keys: Object.keys(output_data) });
   }
 );
@@ -334,7 +348,14 @@ mcpServer.tool("route_decision",
   async ({ from_node, to_node, condition, rationale, data_to_pass }) => {
     if (!state) return err("Call agent_init first.");
     if (data_to_pass) state.sharedContext[`${to_node}_input`] = data_to_pass;
-    state.record({ action: "route", from: from_node, to: to_node, condition, rationale });
+    state.record({
+      action: "route",
+      from: from_node,
+      to: to_node,
+      condition,
+      rationale,
+      data_passed: data_to_pass || null,
+    });
     return ok({ status: "routed", from: from_node, to: to_node, condition: condition || "unconditional" });
   }
 );
@@ -356,7 +377,11 @@ mcpServer.tool("set_shared_context", "Store in shared context (persisted to sess
   async ({ key, value }) => {
     if (!state) return err("Call agent_init first.");
     state.sharedContext[key] = value;
-    state.persist(); broadcastState(state);
+    state.record({
+      action: "shared_context_set",
+      key,
+      value,
+    });
     return ok({ stored: key });
   }
 );
@@ -365,7 +390,15 @@ mcpServer.tool("get_shared_context", "Retrieve from shared context.",
   { key: z.string() },
   async ({ key }) => {
     if (!state) return err("Call agent_init first.");
-    return ok({ key, value: state.sharedContext[key] ?? null, found: key in state.sharedContext });
+    const found = key in state.sharedContext;
+    const value = state.sharedContext[key] ?? null;
+    state.record({
+      action: "shared_context_get",
+      key,
+      found,
+      value,
+    });
+    return ok({ key, value, found });
   }
 );
 

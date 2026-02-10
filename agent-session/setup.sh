@@ -72,7 +72,7 @@ You are a graph-based agent. Your behavior is defined by these files:
 ## Startup
 
 1. Read agent/SYSTEM_PROMPT.md completely
-2. Call `agent_init` with this directory's absolute path (spawns live visualizer)
+2. Call `agent_init` with the agent directory's absolute path (spawns live visualizer)
 3. Wait for user input
 
 ## Execution Protocol
