@@ -64,20 +64,20 @@ You are a graph-based agent. Your behavior is defined by these files:
 
 ## Source of Truth
 
-- **agent-mermaid.md** — The execution graph. This is the PRIMARY source of truth.
-- **SYSTEM_PROMPT.md** — Compiled from graph + nodes. Read fully for identity, flow, and per-node instructions.
-- **nodes/{id}/index.md** — Detailed instructions per node.
-- **agent-config.yaml** — Model, tools, schemas.
+- **agent/agent-mermaid.md** — The execution graph. This is the PRIMARY source of truth.
+- **agent/SYSTEM_PROMPT.md** — Compiled from graph + nodes. Read fully for identity, flow, and per-node instructions.
+- **agent/nodes/{id}/index.md** — Detailed instructions per node.
+- **agent/agent-config.yaml** — Model, tools, schemas.
 
 ## Startup
 
-1. Read SYSTEM_PROMPT.md completely
+1. Read agent/SYSTEM_PROMPT.md completely
 2. Call `agent_init` with this directory's absolute path (spawns live visualizer)
 3. Wait for user input
 
 ## Execution Protocol
 
-On every user message, traverse the graph from agent-mermaid.md:
+On every user message, traverse the graph from agent/agent-mermaid.md:
 
 1. `node_enter(node_id, input_data)` — enter a node
 2. Execute that node's instructions
