@@ -1,0 +1,59 @@
+name: research-agent
+version: "1.0.0"
+description: >
+  A deep research agent that takes a user's question, searches multiple sources,
+  analyzes findings, synthesizes a comprehensive report, and self-reviews for quality.
+  Handles ambiguous queries by asking for clarification.
+
+defaults:
+  model: claude-sonnet-4-5-20250929
+  temperature: 0.2
+  max_tokens: 8192
+
+execution:
+  mode: sequential
+  max_total_time: 180s
+  error_strategy: retry_then_escalate
+
+context:
+  shared_memory: true
+  pass_history: false
+
+mcp_servers: []
+
+input_schema:
+  type: object
+  required: [query]
+  properties:
+    query:
+      type: string
+      description: "The user's research question or topic"
+    depth:
+      type: string
+      enum: [quick, standard, deep]
+      default: standard
+    format:
+      type: string
+      enum: [report, bullets, brief]
+      default: report
+
+output_schema:
+  type: object
+  properties:
+    report:
+      type: string
+      description: "The final research report"
+    citations:
+      type: array
+      items:
+        type: object
+        properties:
+          title: { type: string }
+          url: { type: string }
+          relevance: { type: number }
+    confidence:
+      type: number
+      description: "Overall confidence score 0-1"
+    warnings:
+      type: array
+      items: { type: string }

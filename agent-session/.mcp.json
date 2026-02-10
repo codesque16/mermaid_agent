@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+      "agent-runtime-mcp": {
+        "command": "node",
+        "args": [
+          "./agent-runtime-mcp/src/index.js"
+        ],
+        "env": {
+          "AGENT_PATH": "./travel-support"
+        }
+      }
+    }
+  }

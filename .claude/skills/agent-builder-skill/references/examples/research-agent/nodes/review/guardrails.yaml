@@ -1,0 +1,10 @@
+input:
+  - "report field must be a non-empty string"
+  - "citations must be an array with at least 1 entry"
+  - "confidence must be a number between 0 and 1"
+
+output:
+  - "quality score must be between 0 and 1"
+  - "if quality < threshold, feedback must be non-empty"
+  - "approved must be a boolean"
+  - "dimension_scores must have all 5 dimensions"

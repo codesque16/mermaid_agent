@@ -1,0 +1,18 @@
+- type: function
+  name: web_search
+  description: "Search the web for current information"
+  parameters:
+    query:
+      type: string
+      description: "Search query"
+    max_results:
+      type: integer
+      default: 10
+
+- type: function
+  name: web_fetch
+  description: "Fetch full content from a URL"
+  parameters:
+    url:
+      type: string
+      description: "URL to fetch"

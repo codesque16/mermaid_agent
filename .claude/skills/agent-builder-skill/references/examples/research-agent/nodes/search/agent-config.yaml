@@ -1,0 +1,12 @@
+name: multi-source-search
+version: "1.0.0"
+description: "Parallel multi-source search sub-agent"
+
+defaults:
+  model: claude-sonnet-4-5-20250929
+  temperature: 0.1
+
+execution:
+  mode: parallel
+  max_total_time: 60s
+  error_strategy: log_and_continue
