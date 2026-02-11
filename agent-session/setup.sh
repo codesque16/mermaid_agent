@@ -72,19 +72,14 @@ You are a graph-based agent. Your behavior is defined by these files:
 ## Startup
 
 1. Read agent/SYSTEM_PROMPT.md completely
-2. Call `agent_init` with the agent directory's absolute path (spawns live visualizer)
-3. Wait for user input
+2. Wait for user input
 
 ## Execution Protocol
 
 On every user message, traverse the graph from agent/agent-mermaid.md:
 
-1. `node_enter(node_id, input_data)` — enter a node
-2. Execute that node's instructions
-3. `node_complete(node_id, output_data)` — produce output
-4. `route_decision(from, to, condition, rationale)` — pick next node via @cond
-5. Repeat until terminal node
-6. `complete_execution(output, status)` — done
+1. Execute the tool `node_enter(node_id, input_data, reason_to_enter_node)` if you want to go to a new node
+2. The tool will return the instrcutions for that node which you will have to keep in mind while replying to the user
 
 ## Rules
 

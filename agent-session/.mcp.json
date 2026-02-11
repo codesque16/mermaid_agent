@@ -2,9 +2,9 @@
   "mcpServers": {
     "agent-runtime": {
       "command": "node",
-      "args": ["/Users/shiladityabanerjee/Downloads/mermaid_agent/agent-session/agent-runtime-mcp/src/index.js"],
+      "args": ["/Users/apple/Projects/mermaid_agent/agent-session/agent-runtime-mcp/src/index.js"],
       "env": {
-        "AGENT_PATH": "/Users/shiladityabanerjee/Downloads/mermaid_agent/agent-session/agent"
+        "AGENT_PATH": "/Users/apple/Projects/mermaid_agent/agent-session/agent"
       }
     }
   }

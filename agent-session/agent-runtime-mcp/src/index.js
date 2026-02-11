@@ -243,50 +243,51 @@ if (envAgentPath && existsSync(envAgentPath) && existsSync(join(envAgentPath, "a
 function ok(d) { return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] }; }
 function err(m) { return { content: [{ type: "text", text: JSON.stringify({ error: m }) }], isError: true }; }
 
-mcpServer.tool("agent_init",
-  "Initialize runtime. Loads graph from agent-mermaid.md (source of truth), restores session, spawns visualizer.",
-  { agent_path: z.string().describe("Absolute path to the agent directory") },
-  async ({ agent_path }) => {
-    const p = resolve(agent_path);
-    if (!existsSync(p)) return err(`Not found: ${p}`);
-    if (!existsSync(join(p, "agent-mermaid.md")))
-      return err(`No agent-mermaid.md in ${p}. This is the required source of truth.`);
+// mcpServer.tool("agent_init",
+//   "Initialize runtime. Loads graph from agent-mermaid.md (source of truth), restores session, spawns visualizer.",
+//   { agent_path: z.string().describe("Absolute path to the agent directory") },
+//   async ({ agent_path }) => {
+//     const p = resolve(agent_path);
+//     if (!existsSync(p)) return err(`Not found: ${p}`);
+//     if (!existsSync(join(p, "agent-mermaid.md")))
+//       return err(`No agent-mermaid.md in ${p}. This is the required source of truth.`);
 
-    if (state && state.agentPath === p) {
-      return ok({
-        status: "initialized", session_id: SESSION_ID,
-        agent_path: p, agent_name: state.agentName,
-        has_mermaid: true,
-        max_iteration_nodes: state.nodeMaxIterations,
-        restored_events: state.history.length > 1 ? state.history.length - 1 : 0,
-        visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : "starting...",
-        session_file: state.stateFile,
-      });
-    }
+//     if (state && state.agentPath === p) {
+//       return ok({
+//         status: "initialized", session_id: SESSION_ID,
+//         agent_path: p, agent_name: state.agentName,
+//         has_mermaid: true,
+//         max_iteration_nodes: state.nodeMaxIterations,
+//         restored_events: state.history.length > 1 ? state.history.length - 1 : 0,
+//         visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : "starting...",
+//         session_file: state.stateFile,
+//       });
+//     }
 
-    state = new AgentState(p, SESSION_ID);
-    state.record({ action: "init", agent: state.agentName, path: p });
-    startVisualizer(state);
+//     state = new AgentState(p, SESSION_ID);
+//     state.record({ action: "init", agent: state.agentName, path: p });
+//     startVisualizer(state);
 
-    return ok({
-      status: "initialized", session_id: SESSION_ID,
-      agent_path: p, agent_name: state.agentName,
-      has_mermaid: true,
-      max_iteration_nodes: state.nodeMaxIterations,
-      restored_events: state.history.length > 1 ? state.history.length - 1 : 0,
-      visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : "starting...",
-      session_file: state.stateFile,
-    });
-  }
-);
+//     return ok({
+//       status: "initialized", session_id: SESSION_ID,
+//       agent_path: p, agent_name: state.agentName,
+//       has_mermaid: true,
+//       max_iteration_nodes: state.nodeMaxIterations,
+//       restored_events: state.history.length > 1 ? state.history.length - 1 : 0,
+//       visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : "starting...",
+//       session_file: state.stateFile,
+//     });
+//   }
+// );
 
 mcpServer.tool("node_enter",
   "Enter a graph node (from agent-mermaid.md). Validates iteration limits. Loads instructions from nodes/{id}/index.md.",
   {
     node_id: z.string().describe("Node ID as defined in agent-mermaid.md"),
+    reason: z.string().optional().describe("Why entering this node (e.g. routing rationale, @cond satisfied, or decision basis)"),
     input_data: z.record(z.string(), z.any()).optional().describe("Data from @pass on incoming edge"),
   },
-  async ({ node_id, input_data }) => {
+  async ({ node_id, reason, input_data }) => {
     if (!state) return err("Call agent_init first.");
     const count = state.iterationCounts[node_id] || 0;
     const max = state.nodeMaxIterations[node_id] || null;
@@ -309,98 +310,100 @@ mcpServer.tool("node_enter",
       action: "enter",
       node: node_id,
       iteration: count + 1,
+      reason: reason || null,
       input_data: input_data || {},
       has_instructions: !!instructions,
       instructions: instructions || null,
     });
 
     return ok({ status: "entered", node_id, iteration: count + 1, max_iterations: max,
+      reason: reason || null,
       input_data: input_data || {}, has_instructions: !!instructions,
       instructions: instructions || null });
   }
 );
 
-mcpServer.tool("node_complete",
-  "Complete a node with output data.",
-  { node_id: z.string(), output_data: z.record(z.string(), z.any()) },
-  async ({ node_id, output_data }) => {
-    if (!state) return err("Call agent_init first.");
-    state.nodeOutputs[node_id] = output_data;
-    state.sharedContext[`${node_id}_output`] = output_data;
-    state.record({
-      action: "complete",
-      node: node_id,
-      keys: Object.keys(output_data),
-      output_data,
-    });
-    return ok({ status: "completed", node_id, output_keys: Object.keys(output_data) });
-  }
-);
+// mcpServer.tool("node_complete",
+//   "Complete a node with output data.",
+//   { node_id: z.string(), output_data: z.record(z.string(), z.any()) },
+//   async ({ node_id, output_data }) => {
+//     if (!state) return err("Call agent_init first.");
+//     state.nodeOutputs[node_id] = output_data;
+//     state.sharedContext[`${node_id}_output`] = output_data;
+//     state.record({
+//       action: "complete",
+//       node: node_id,
+//       keys: Object.keys(output_data),
+//       output_data,
+//     });
+//     return ok({ status: "completed", node_id, output_keys: Object.keys(output_data) });
+//   }
+// );
 
-mcpServer.tool("route_decision",
-  "Record routing between nodes. Use @cond from agent-mermaid.md edges.",
-  {
-    from_node: z.string(), to_node: z.string(),
-    condition: z.string().optional().describe("@cond that was satisfied"),
-    rationale: z.string().describe("Why this route"),
-    data_to_pass: z.record(z.string(), z.any()).optional().describe("@pass fields"),
-  },
-  async ({ from_node, to_node, condition, rationale, data_to_pass }) => {
-    if (!state) return err("Call agent_init first.");
-    if (data_to_pass) state.sharedContext[`${to_node}_input`] = data_to_pass;
-    state.record({
-      action: "route",
-      from: from_node,
-      to: to_node,
-      condition,
-      rationale,
-      data_passed: data_to_pass || null,
-    });
-    return ok({ status: "routed", from: from_node, to: to_node, condition: condition || "unconditional" });
-  }
-);
+// mcpServer.tool("route_decision",
+//   "Record routing between nodes. Use @cond from agent-mermaid.md edges.",
+//   {
+//     from_node: z.string(), to_node: z.string(),
+//     condition: z.string().optional().describe("@cond that was satisfied"),
+//     rationale: z.string().describe("Why this route"),
+//     data_to_pass: z.record(z.string(), z.any()).optional().describe("@pass fields"),
+//   },
+//   async ({ from_node, to_node, condition, rationale, data_to_pass }) => {
+//     if (!state) return err("Call agent_init first.");
+//     if (data_to_pass) state.sharedContext[`${to_node}_input`] = data_to_pass;
+//     state.record({
+//       action: "route",
+//       from: from_node,
+//       to: to_node,
+//       condition,
+//       rationale,
+//       data_passed: data_to_pass || null,
+//     });
+//     return ok({ status: "routed", from: from_node, to: to_node, condition: condition || "unconditional" });
+//   }
+// );
 
-mcpServer.tool("get_execution_state", "Current execution state.", {},
-  async () => {
-    if (!state) return err("Call agent_init first.");
-    return ok({ session_id: state.sessionId, status: state.status,
-      current_node: state.currentNode, visited: state.getVisitedNodes(),
-      iteration_counts: state.iterationCounts,
-      context_keys: Object.keys(state.sharedContext),
-      events: state.history.length, started_at: state.startTime,
-      visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : null });
-  }
-);
+// mcpServer.tool("get_execution_state", "Current execution state.", {},
+//   async () => {
+//     if (!state) return err("Call agent_init first.");
+//     return ok({ session_id: state.sessionId, status: state.status,
+//       current_node: state.currentNode, visited: state.getVisitedNodes(),
+//       iteration_counts: state.iterationCounts,
+//       context_keys: Object.keys(state.sharedContext),
+//       events: state.history.length, started_at: state.startTime,
+//       visualizer: vizPort ? `http://127.0.0.1:${vizPort}` : null });
+//   }
+// );
 
-mcpServer.tool("set_shared_context", "Store in shared context (persisted to session file).",
-  { key: z.string(), value: z.any() },
-  async ({ key, value }) => {
-    if (!state) return err("Call agent_init first.");
-    state.sharedContext[key] = value;
-    state.record({
-      action: "shared_context_set",
-      key,
-      value,
-    });
-    return ok({ stored: key });
-  }
-);
+// mcpServer.tool("set_shared_context", "Store in shared context (persisted to session file).",
+//   { key: z.string(), value: z.any() },
+//   async ({ key, value }) => {
+//     if (!state) return err("Call agent_init first.");
+//     state.sharedContext[key] = value;
+//     state.record({
+//       action: "shared_context_set",
+//       key,
+//       value,
+//     });
+//     return ok({ stored: key });
+//   }
+// );
 
-mcpServer.tool("get_shared_context", "Retrieve from shared context.",
-  { key: z.string() },
-  async ({ key }) => {
-    if (!state) return err("Call agent_init first.");
-    const found = key in state.sharedContext;
-    const value = state.sharedContext[key] ?? null;
-    state.record({
-      action: "shared_context_get",
-      key,
-      found,
-      value,
-    });
-    return ok({ key, value, found });
-  }
-);
+// mcpServer.tool("get_shared_context", "Retrieve from shared context.",
+//   { key: z.string() },
+//   async ({ key }) => {
+//     if (!state) return err("Call agent_init first.");
+//     const found = key in state.sharedContext;
+//     const value = state.sharedContext[key] ?? null;
+//     state.record({
+//       action: "shared_context_get",
+//       key,
+//       found,
+//       value,
+//     });
+//     return ok({ key, value, found });
+//   }
+// );
 
 // mcpServer.tool("request_human_input", "Pause for user input at human_input nodes.",
 //   { prompt: z.string(), options: z.array(z.string()).optional() },
@@ -425,31 +428,31 @@ mcpServer.tool("get_shared_context", "Retrieve from shared context.",
 //   }
 // );
 
-mcpServer.tool("complete_execution", "Mark agent complete at terminal node.",
-  { final_output: z.record(z.string(), z.any()),
-    status: z.enum(["success", "partial", "error"]),
-    summary: z.string().optional() },
-  async ({ final_output, status: cs, summary }) => {
-    if (!state) return err("Call agent_init first.");
-    state.status = "completed";
-    state.record({ action: "complete_execution", status: cs, summary });
-    const enters = state.history.filter(h => h.action === "enter");
-    return ok({ status: "completed", completion_status: cs, summary, final_output,
-      stats: { session_id: state.sessionId, events: state.history.length,
-        nodes_visited: enters.length,
-        unique_nodes: [...new Set(enters.map(h => h.node))].length,
-        routes: state.history.filter(h => h.action === "route").length,
-        iterations: state.iterationCounts },
-      files: { state: state.stateFile, trace: state.traceFile } });
-  }
-);
+// mcpServer.tool("complete_execution", "Mark agent complete at terminal node.",
+//   { final_output: z.record(z.string(), z.any()),
+//     status: z.enum(["success", "partial", "error"]),
+//     summary: z.string().optional() },
+//   async ({ final_output, status: cs, summary }) => {
+//     if (!state) return err("Call agent_init first.");
+//     state.status = "completed";
+//     state.record({ action: "complete_execution", status: cs, summary });
+//     const enters = state.history.filter(h => h.action === "enter");
+//     return ok({ status: "completed", completion_status: cs, summary, final_output,
+//       stats: { session_id: state.sessionId, events: state.history.length,
+//         nodes_visited: enters.length,
+//         unique_nodes: [...new Set(enters.map(h => h.node))].length,
+//         routes: state.history.filter(h => h.action === "route").length,
+//         iterations: state.iterationCounts },
+//       files: { state: state.stateFile, trace: state.traceFile } });
+//   }
+// );
 
-mcpServer.tool("get_execution_trace", "Full execution trace.", {},
-  async () => {
-    if (!state) return err("Call agent_init first.");
-    return ok({ trace: state.history, count: state.history.length, file: state.traceFile });
-  }
-);
+// mcpServer.tool("get_execution_trace", "Full execution trace.", {},
+//   async () => {
+//     if (!state) return err("Call agent_init first.");
+//     return ok({ trace: state.history, count: state.history.length, file: state.traceFile });
+//   }
+// );
 
 
 // ═══════════════════════════════════════════════════════

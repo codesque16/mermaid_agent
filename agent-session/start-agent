@@ -22,4 +22,4 @@ echo ""
 
 echo ""
 echo "Launching Claude..."
-exec claude --append-system-prompt-file "$SCRIPT_DIR/CLAUDE.md" "start the agent"
+exec claude --append-system-prompt-file "$SCRIPT_DIR/CLAUDE.md" "start the agent and go to the start node to begin the conversation with the user"
