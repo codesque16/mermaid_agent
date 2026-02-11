@@ -1,0 +1,60 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -z "$1" ]; then
+  echo "Usage: $0 <path-to-agent-dir>"
+  echo "Example: $0 $REPO_ROOT/agents/my-agent"
+  exit 1
+fi
+
+AGENT_DIR="$(cd "$1" && pwd)"
+if [ ! -f "$AGENT_DIR/agent-mermaid.md" ]; then
+  echo "Error: No agent-mermaid.md in $AGENT_DIR"
+  exit 1
+fi
+
+MCP_INDEX="$SCRIPT_DIR/mcp-server/src/index.js"
+if [ ! -f "$MCP_INDEX" ]; then
+  echo "Error: MCP server not found at $MCP_INDEX"
+  exit 1
+fi
+
+echo "Agent: $AGENT_DIR"
+echo "MCP:   $MCP_INDEX"
+
+# Install MCP deps if needed
+if [ -f "$SCRIPT_DIR/mcp-server/package.json" ]; then
+  (cd "$SCRIPT_DIR/mcp-server" && npm install --silent 2>/dev/null) || true
+fi
+
+# Self-contained .mcp.json inside the agent directory
+cat > "$AGENT_DIR/.mcp.json" << EOF
+{
+  "mcpServers": {
+    "simple-mermaid-agent": {
+      "command": "node",
+      "args": ["$MCP_INDEX"],
+      "env": { "AGENT_PATH": "$AGENT_DIR" }
+    }
+  }
+}
+EOF
+echo "Wrote $AGENT_DIR/.mcp.json"
+
+if [ ! -f "$AGENT_DIR/CLAUDE.md" ]; then
+  echo "Warning: No CLAUDE.md in agent dir. Add a system prompt for how to run the graph."
+fi
+
+echo ""
+echo "To start the agent, run Claude from the agent directory:"
+echo "  cd $AGENT_DIR && claude --append-system-prompt-file CLAUDE.md"
+echo ""
+if command -v claude &>/dev/null; then
+  exec bash -c "cd \"$AGENT_DIR\" && claude --append-system-prompt-file CLAUDE.md"
+else
+  echo "Claude CLI not in PATH. Run the command above from your shell."
+  exit 0
+fi

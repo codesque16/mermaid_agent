@@ -1,0 +1,12 @@
+{
+  "name": "simple-mermaid-agent-mcp",
+  "version": "1.0.0",
+  "description": "MCP server with single node_enter tool; agent init on session start via AGENT_PATH",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": { "start": "node src/index.js" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.23.0"
+  }
+}
