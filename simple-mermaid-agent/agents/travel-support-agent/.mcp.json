@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "simple-mermaid-agent": {
+      "command": "node",
+      "args": ["/Users/apple/Projects/mermaid_agent/simple-mermaid-agent/mcp-server/src/index.js"],
+      "env": { "AGENT_PATH": "/Users/apple/Projects/mermaid_agent/simple-mermaid-agent/agents/travel-support-agent" }
+    }
+  }
+}
