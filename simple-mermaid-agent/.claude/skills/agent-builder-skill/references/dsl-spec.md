@@ -16,9 +16,8 @@ Minimal spec for the simple framework: one graph file, one instructions file per
 
 You can annotate nodes for readability (Claude reads the graph). Examples:
 
-- `@type: executor | router | validator | terminal`
-- `@pass: field1, field2` on edges
-- `@cond: expression` on edges
+- Node labels in Mermaid: `intake["User intake"]`, `classify{"Classify intent"}` — the text in brackets is the optional label.
+- On edges: `@pass: field1, field2` (what to pass to the next node), `@cond: expression` (condition for taking that edge).
 
 None of these are required for the simple runtime; they help document the graph.
 
@@ -39,5 +38,3 @@ Put everything that node needs in one place:
 - Inputs and outputs
 - Constraints and guardrails
 - Examples (optional)
-
-No separate `tools.yaml` or `guardrails.yaml` in the simple framework.

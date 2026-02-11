@@ -52,7 +52,7 @@ Don’t over-interview. If you have enough to draw a graph, draw it first and re
 - Create `agent-mermaid.md` with a single `graph TD` or `graph LR` Mermaid diagram.
 - Use clear node IDs (e.g. `intake`, `classify`, `handle_request`, `done`).
 - Use edges with optional labels for conditions, e.g. `classify -->|"intent == X"| handle_x`.
-- Keep the DSL minimal: node IDs and labels; you can use `@type`, `@cond`, `@pass` in labels if you want (for Claude’s benefit when reading the graph), but the only required artifact is the Mermaid file.
+- Keep the DSL minimal: node IDs and labels; you can use optional node labels (e.g. `intake["User intake"]`) and on edges `@cond`, `@pass` in labels. The only required artifact is the Mermaid file. Labels are optional (for Claude’s benefit when reading the graph).
 
 ### 3. Create each node’s instructions
 
@@ -112,5 +112,5 @@ graph TD
 ## Summary
 
 - **Skill output:** Agents under `agents/<name>/` with `agent-mermaid.md`, `nodes/<id>/index.md`, `.mcp.json`, and `CLAUDE.md`.
-- **MCP:** One tool, `node_enter(node_id, input_data?)`; returns that node’s `index.md` content; agent is initialized when the MCP session starts (via `AGENT_PATH`).
-- **Running:** User (or start script) runs Claude from the agent directory so the agent loads and Claude follows `CLAUDE.md` and uses `node_enter` to get per-node instructions.
+- **MCP:** One tool, `node_enter(node_id, input_data?)`; returns that node’s `index.md` content; agent is initialized when the MCP session starts (via `AGENT_PATH`). When an agent is loaded, a **live visualizer** opens in the browser showing the graph and highlighting the current and visited nodes as `node_enter` is called.
+- **Running:** User (or start script) runs Claude from the agent directory so the agent loads and Claude follows `CLAUDE.md` and uses `node_enter` to get per-node instructions. Generate `.mcp.json` via `./simple-mermaid-agent/start-agent agents/<agent-name>`.

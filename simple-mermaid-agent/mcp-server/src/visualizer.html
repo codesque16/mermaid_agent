@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Visualizer — {{AGENT_NAME}}</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Fira Code', monospace; background: #0a0a0f; color: #c8c8d8; }
+
+  .layout { display: grid; grid-template-columns: 1fr 380px; grid-template-rows: auto 1fr; height: 100vh; }
+
+  .header {
+    grid-column: 1 / -1;
+    background: #111118;
+    border-bottom: 1px solid #222238;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 14px; color: #a78bfa; font-weight: 600; }
+  .header .status { font-size: 12px; padding: 3px 10px; border-radius: 20px; }
+  .status-running { background: #1a2a1a; color: #4ade80; }
+  .status-paused { background: #2a2a1a; color: #fbbf24; }
+  .status-completed { background: #1a1a2a; color: #60a5fa; }
+  .status-initialized { background: #1a1a20; color: #888; }
+  .header .node-badge { font-size: 12px; color: #f472b6; }
+  .header .session { font-size: 11px; color: #555; margin-left: auto; }
+
+  .graph-panel {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    min-height: 0;
+  }
+  .graph-zoom-wrapper {
+    transform-origin: 0 0;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 20px;
+    min-width: min-content;
+    min-height: min-content;
+  }
+  .graph-panel .mermaid svg { display: block; }
+  .graph-zoom-controls {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+    background: #111118;
+    border: 1px solid #222238;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .graph-zoom-controls button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #1a1a24;
+    color: #c8c8d8;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .graph-zoom-controls button:hover { background: #2a2a38; color: #e9d5ff; }
+  .graph-zoom-controls button:active { background: #333348; }
+  .graph-zoom-controls .zoom-label { font-size: 11px; padding: 0 6px; align-self: center; color: #666; }
+
+  .trace-panel {
+    background: #0d0d14;
+    border-left: 1px solid #222238;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .trace-header {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    border-bottom: 1px solid #1a1a28;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .trace-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .trace-item {
+    border-bottom: 1px solid #111120;
+  }
+  .trace-item:hover .trace-event { background: #111120; }
+  .trace-event {
+    padding: 6px 12px 6px 16px;
+    font-size: 11px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .trace-event:hover { background: #111120; }
+  .trace-expand {
+    width: 18px;
+    flex-shrink: 0;
+    color: #555;
+    font-size: 10px;
+    transition: transform 0.15s ease;
+  }
+  .trace-item.expanded .trace-expand { transform: rotate(90deg); color: #a78bfa; }
+  .trace-ts { color: #444; min-width: 65px; font-size: 10px; }
+  .trace-action { font-weight: 600; min-width: 60px; }
+  .trace-detail { color: #888; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .act-enter { color: #4ade80; }
+  .act-complete { color: #60a5fa; }
+  .act-route { color: #f472b6; }
+  .act-human { color: #fbbf24; }
+  .act-error { color: #f87171; }
+  .act-init { color: #a78bfa; }
+  .act-done { color: #34d399; }
+
+  .trace-details {
+    display: none;
+    padding: 10px 16px 12px 44px;
+    font-size: 11px;
+    background: #08080c;
+    border-top: 1px solid #111120;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .trace-item.expanded .trace-details { display: block; }
+  .trace-details pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #9ca3af;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .trace-details .detail-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 6px 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid #15151f;
+  }
+  .trace-details .detail-rows .detail-row:last-child { border-bottom: none; }
+  .trace-details .detail-key {
+    color: #a78bfa;
+    font-weight: 500;
+  }
+  .trace-details .detail-val {
+    color: #c8c8d8;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .trace-details .detail-raw {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #1a1a28;
+    color: #6b7280;
+  }
+  .trace-details .detail-raw-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #555;
+    margin-bottom: 4px;
+  }
+
+  .context-panel {
+    border-top: 1px solid #222238;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 8px 16px;
+    flex-shrink: 0;
+  }
+  .context-header {
+    font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px;
+    padding: 4px 0 6px; border-bottom: 1px solid #1a1a28; margin-bottom: 6px;
+  }
+  .ctx-entry { font-size: 11px; padding: 2px 0; color: #888; }
+  .ctx-key { color: #a78bfa; }
+
+  .connected-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block; }
+  .disconnected-dot { width: 8px; height: 8px; border-radius: 50%; background: #f87171; display: inline-block; }
+
+  /* Mermaid overrides for dark theme + highlight */
+  .mermaid { background: transparent !important; }
+
+  /* Active node: strong highlight so it's obvious which node is current */
+  .node.active-node rect,
+  .node.active-node circle,
+  .node.active-node polygon,
+  .node.active-node .basic { stroke: #c084fc !important; stroke-width: 3px !important; filter: drop-shadow(0 0 12px rgba(192, 132, 252, 0.7)) !important; fill: #2e1065 !important; }
+  .node.active-node .nodeLabel { font-weight: 700 !important; fill: #e9d5ff !important; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="header">
+    <span id="connDot" class="connected-dot"></span>
+    <h1 id="agentName">{{AGENT_NAME}}</h1>
+    <span id="statusBadge" class="status status-initialized">initialized</span>
+    <span id="currentNode" class="node-badge"></span>
+    <span class="session" id="sessionId">session: {{SESSION_ID}}</span>
+  </div>
+
+  <div class="graph-panel" id="graphPanel">
+    <div id="graphZoomWrapper" class="graph-zoom-wrapper">
+      <div class="mermaid" id="mermaidContainer">
+        {{MERMAID_SOURCE}}
+      </div>
+    </div>
+    <div class="graph-zoom-controls">
+      <button id="zoomOut" type="button" title="Zoom out">−</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button id="zoomIn" type="button" title="Zoom in">+</button>
+      <button id="zoomFit" type="button" title="Fit to view">⊡</button>
+      <button id="zoomReset" type="button" title="Reset (100%)">⟲</button>
+    </div>
+  </div>
+
+  <div class="trace-panel">
+    <div class="trace-header">Execution Trace</div>
+    <div class="trace-list" id="traceList"></div>
+    <div class="context-panel">
+      <div class="context-header">Shared Context</div>
+      <div id="contextList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Mermaid init ──
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#2a2a4a',
+      primaryTextColor: '#c8c8d8',
+      primaryBorderColor: '#4a4a6a',
+      lineColor: '#555578',
+      secondaryColor: '#1a1a2e',
+      tertiaryColor: '#0f0f1a',
+      fontSize: '14px',
+    },
+    flowchart: { curve: 'basis', padding: 15 },
+  });
+
+  const mermaidContainer = document.getElementById('mermaidContainer');
+  (async function renderMermaid() {
+    try {
+      await mermaid.run({ nodes: [mermaidContainer], suppressErrors: false });
+      initZoomPan();
+    } catch (err) {
+      const msg = err.message || String(err);
+      mermaidContainer.innerHTML = '<pre style="color:#f87171;padding:1rem;font-size:12px;">Mermaid render error:\n' + msg + '</pre>';
+      console.error('Mermaid render error:', err);
+    }
+  })();
+
+  // ── Zoom & pan for diagram ──
+  function initZoomPan() {
+    const panel = document.getElementById('graphPanel');
+    const wrapper = document.getElementById('graphZoomWrapper');
+    const zoomLabel = document.getElementById('zoomLabel');
+    if (!panel || !wrapper) return;
+
+    let scale = 1, tx = 0, ty = 0;
+    let isPanning = false, lastX = 0, lastY = 0;
+    const minScale = 0.2, maxScale = 4;
+
+    function applyTransform() {
+      wrapper.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+      zoomLabel.textContent = Math.round(scale * 100) + '%';
+    }
+
+    panel.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = panel.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const newScale = Math.min(maxScale, Math.max(minScale, scale * factor));
+      tx = x - (x - tx) * (newScale / scale);
+      ty = y - (y - ty) * (newScale / scale);
+      scale = newScale;
+      applyTransform();
+    }, { passive: false });
+
+    panel.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isPanning = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      tx += e.clientX - lastX;
+      ty += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      applyTransform();
+    });
+    window.addEventListener('mouseup', () => { isPanning = false; });
+
+    document.getElementById('zoomIn').addEventListener('click', () => {
+      const rect = panel.getBoundingClientRect();
+      const cx = rect.width / 2, cy = rect.height / 2;
+      const oldScale = scale;
+      scale = Math.min(maxScale, scale * 1.2);
+      tx = cx - (cx - tx) * (scale / oldScale);
+      ty = cy - (cy - ty) * (scale / oldScale);
+      applyTransform();
+    });
+    document.getElementById('zoomOut').addEventListener('click', () => {
+      const rect = panel.getBoundingClientRect();
+      const cx = rect.width / 2, cy = rect.height / 2;
+      const oldScale = scale;
+      scale = Math.max(minScale, scale / 1.2);
+      tx = cx - (cx - tx) * (scale / oldScale);
+      ty = cy - (cy - ty) * (scale / oldScale);
+      applyTransform();
+    });
+    document.getElementById('zoomReset').addEventListener('click', () => {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      applyTransform();
+    });
+    document.getElementById('zoomFit').addEventListener('click', () => {
+      const svg = wrapper.querySelector('.mermaid svg');
+      if (!svg) return;
+      const pw = panel.clientWidth, ph = panel.clientHeight;
+      const bw = svg.getBBox().width + 80, bh = svg.getBBox().height + 80;
+      scale = Math.min(pw / bw, ph / bh, 1);
+      tx = Math.max(0, (pw - bw * scale) / 2);
+      ty = Math.max(0, (ph - bh * scale) / 2);
+      applyTransform();
+    });
+
+    applyTransform();
+  }
+
+  let currentHighlight = null;
+  let visitedNodes = new Set();
+
+  // ── SSE connection ──
+  const evtSource = new EventSource('/events');
+  const connDot = document.getElementById('connDot');
+
+  evtSource.onopen = () => { connDot.className = 'connected-dot'; };
+  evtSource.onerror = () => { connDot.className = 'disconnected-dot'; };
+
+  evtSource.addEventListener('state', (e) => {
+    const data = JSON.parse(e.data);
+    updateStatus(data.status);
+    if (data.current_node) updateCurrentNode(data.current_node);
+    if (data.visited) data.visited.forEach(n => visitedNodes.add(n));
+    if (data.context_keys) updateContext(data.context_keys, data.context_sample);
+    applyNodeStyles();
+  });
+
+  evtSource.addEventListener('trace', (e) => {
+    const event = JSON.parse(e.data);
+    appendTraceEvent(event);
+
+    if (event.action === 'enter') {
+      visitedNodes.add(event.node);
+      updateCurrentNode(event.node);
+    }
+    if (event.action === 'complete_execution') {
+      updateStatus('completed');
+    }
+    applyNodeStyles();
+  });
+
+  evtSource.addEventListener('full_state', (e) => {
+    const data = JSON.parse(e.data);
+    // Full reload — clear and rebuild
+    updateStatus(data.status);
+    if (data.current_node) updateCurrentNode(data.current_node);
+    visitedNodes = new Set(data.visited || []);
+
+    const traceList = document.getElementById('traceList');
+    traceList.innerHTML = '';
+    (data.history || []).forEach(ev => appendTraceEvent(ev));
+
+    if (data.context_keys) updateContext(data.context_keys, data.context_sample);
+    applyNodeStyles();
+  });
+
+  // ── UI Updates ──
+
+  function updateStatus(status) {
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = status;
+    badge.className = 'status status-' + status;
+  }
+
+  function updateCurrentNode(nodeId) {
+    currentHighlight = nodeId;
+    document.getElementById('currentNode').textContent = '● ' + nodeId;
+  }
+
+  function applyNodeStyles() {
+    // Apply styles to mermaid SVG nodes
+    document.querySelectorAll('.node').forEach(el => {
+      const labelEl = el.querySelector('.nodeLabel, .label');
+      const nodeText = labelEl?.textContent?.trim() || '';
+
+      // Extract node ID — mermaid uses the id in the element's id attribute
+      const elId = el.id || '';
+      // Mermaid node IDs look like "flowchart-nodeId-123"
+      const match = elId.match(/flowchart-(\w+)-/);
+      const nodeId = match ? match[1] : null;
+
+      if (!nodeId) return;
+
+      const rect = el.querySelector('rect, circle, polygon, .basic');
+      if (!rect) return;
+
+      if (nodeId === currentHighlight) {
+        // Current node — strong highlight (main feature: show active node)
+        el.classList.add('active-node');
+        rect.style.stroke = '#c084fc';
+        rect.style.strokeWidth = '4px';
+        rect.style.filter = 'drop-shadow(0 0 12px rgba(192, 132, 252, 0.8))';
+        rect.style.fill = '#2e1065';
+      } else {
+        el.classList.remove('active-node');
+      }
+      if (nodeId !== currentHighlight && visitedNodes.has(nodeId)) {
+        // Visited — subtle green
+        rect.style.stroke = '#4ade80';
+        rect.style.strokeWidth = '2px';
+        rect.style.filter = 'none';
+        rect.style.fill = '#0f1a14';
+      } else if (nodeId !== currentHighlight) {
+        // Unvisited — dim
+        rect.style.stroke = '#333348';
+        rect.style.strokeWidth = '1px';
+        rect.style.filter = 'none';
+        rect.style.fill = '#15151f';
+      }
+    });
+  }
+
+  function formatDetailValue(val) {
+    if (val === undefined) return '—';
+    if (val === null) return 'null';
+    if (typeof val === 'object') return JSON.stringify(val, null, 2);
+    return String(val);
+  }
+
+  function buildDetailsHtml(event) {
+    const rows = Object.entries(event)
+      .filter(([k]) => k !== '_raw')
+      .map(([k, v]) => `<div class="detail-row"><span class="detail-key">${escapeHtml(k)}</span><span class="detail-val">${escapeHtml(formatDetailValue(v))}</span></div>`)
+      .join('');
+    const raw = JSON.stringify(event, null, 2);
+    return `<div class="detail-rows">${rows}</div><div class="detail-raw-label">Raw JSON</div><pre class="detail-raw">${escapeHtml(raw)}</pre>`;
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function appendTraceEvent(event) {
+    const list = document.getElementById('traceList');
+    const item = document.createElement('div');
+    item.className = 'trace-item';
+
+    const time = event.ts ? new Date(event.ts).toLocaleTimeString() : '';
+    let actionClass = 'act-init';
+    let detail = '';
+
+    switch (event.action) {
+      case 'enter':
+        actionClass = 'act-enter';
+        detail = `→ ${event.node} (iter ${event.iteration || 1})`;
+        break;
+      case 'complete':
+        actionClass = 'act-complete';
+        detail = `✓ ${event.node} [${(event.keys || []).join(', ')}]`;
+        break;
+      case 'route':
+        actionClass = 'act-route';
+        detail = `${event.from} → ${event.to}` + (event.condition ? ` (${event.condition})` : '');
+        break;
+      case 'human_input_requested':
+        actionClass = 'act-human';
+        detail = `⏸ ${(event.prompt || '').substring(0, 50)}${(event.prompt || '').length > 50 ? '...' : ''}`;
+        break;
+      case 'iteration_limit':
+        actionClass = 'act-error';
+        detail = `⚠ ${event.node} hit iteration limit`;
+        break;
+      case 'complete_execution':
+        actionClass = 'act-done';
+        detail = `✅ ${event.status}`;
+        break;
+      case 'init':
+        actionClass = 'act-init';
+        detail = `initialized: ${event.agent || ''}`;
+        break;
+      default:
+        detail = JSON.stringify(event).substring(0, 60);
+    }
+
+    const header = document.createElement('div');
+    header.className = 'trace-event';
+    header.innerHTML = `
+      <span class="trace-expand" aria-hidden="true">▶</span>
+      <span class="trace-ts">${escapeHtml(time)}</span>
+      <span class="trace-action ${actionClass}">${escapeHtml(event.action)}</span>
+      <span class="trace-detail">${escapeHtml(detail)}</span>
+    `;
+
+    const details = document.createElement('div');
+    details.className = 'trace-details';
+    details.innerHTML = buildDetailsHtml(event);
+
+    header.addEventListener('click', () => {
+      item.classList.toggle('expanded');
+    });
+
+    item.appendChild(header);
+    item.appendChild(details);
+    list.appendChild(item);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function updateContext(keys, sample) {
+    const list = document.getElementById('contextList');
+    list.innerHTML = '';
+    (keys || []).forEach(k => {
+      const div = document.createElement('div');
+      div.className = 'ctx-entry';
+      const val = sample?.[k];
+      const preview = val !== undefined ? JSON.stringify(val).substring(0, 60) : '…';
+      div.innerHTML = `<span class="ctx-key">${k}</span>: ${preview}`;
+      list.appendChild(div);
+    });
+  }
+
+  // Re-highlight after mermaid renders
+  setTimeout(applyNodeStyles, 1500);
+</script>
+</body>
+</html>
